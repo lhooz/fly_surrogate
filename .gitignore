@@ -1,5 +1,11 @@
+# Python artifacts
 __pycache__/
+*.py[cod]
+
+# Project specific
 checkpoints/
-*.gif
 *.pkl
+*.gif
+
+# System files
 .DS_Store

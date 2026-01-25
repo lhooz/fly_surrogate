@@ -14,7 +14,7 @@ Key features include:
 ### 🎓 Try it now
 Run the full training demo in your browser with zero setup (requires T4 GPU runtime):
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/YOUR_USERNAME/YOUR_REPO_NAME/blob/main/notebooks/train_surrogate.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/lhooz/fly_surrogate/blob/main/notebooks/train_surrogate.ipynb)
 
 ## 📂 Project Structure
 
