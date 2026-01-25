@@ -66,6 +66,8 @@ drive.mount('/content/drive')
 
 The training script runs the Taichi fluid simulation to generate ground-truth aerodynamic data, which is immediately fed into a JAX neural network for training.
 
+![CNN Architecture](images/cnn_architecture.png)
+
 **Run on GPU (Recommended):**
 This script is optimized for Google Colab (T4 GPU). It limits JAX and Taichi memory usage to prevent conflicts.
 
@@ -101,7 +103,3 @@ Key simulation parameters are defined in `environment_engine_taichi.py`:
 ## 📄 License
 
 This project is open-source. See the [LICENSE](https://www.google.com/search?q=LICENSE) file for details.
-
-```
-
-```
