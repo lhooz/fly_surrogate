@@ -401,7 +401,7 @@ def run_validation():
     
     # Pass 'render_frames' instead of 'total_frames'
     ani = animation.FuncAnimation(fig, update, frames=render_frames, interval=40, blit=False)
-    ani.save("validation.gif", writer='pillow', fps=30, dpi=100)
+    ani.save("inference.gif", writer='pillow', fps=30, dpi=100)
     print("--> Saved validation.gif")
 
 if __name__ == "__main__":

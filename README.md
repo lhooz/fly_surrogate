@@ -7,7 +7,7 @@
 
 ### 🌟 Key Features
 
-* **Hybrid Compute Architecture:** Zero-copy synchronization between **LBM** (Taichi) and **Differentiable Learning** (JAX).
+* **Unified GPU Pipeline:** Efficient synchronization between **LBM** (Taichi) and **Differentiable Learning** (JAX).
 * **Bio-Fluid Physics:** **D2Q9 LBM** solver with **Smagorinsky LES** for unsteady vortex dynamics at low-to-moderate Re.
 * **Robust FSI:** **Brinkman Penalization** immersed boundary method for mapping Lagrangian structures to Eulerian grids.
 * **Infinite Data Pipeline:** **Online learning** architecture generates physics data on-the-fly, eliminating static dataset constraints.
