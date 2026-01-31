@@ -24,7 +24,7 @@ Run the full training demo in your browser with zero setup (requires GPU runtime
 
 ## 🧠 Neural Architecture
 
-The surrogate model uses a **1D ResNet** designed to capture spatial correlations along the wing chord. This architecture respects the topological sequence of the discretization points and processes kinematic history directly.
+The surrogate model uses a **1D ResNet** designed to capture spatial correlations along the wing chord. This architecture respects the topological sequence of the discretization points and processes kinematic data directly.
 
 ```mermaid
 graph LR
@@ -118,7 +118,7 @@ python train_surrogate.py
 ```
 
 **2. Validate Performance**
-To generate the validation GIF shown above, run the inference script. It tests the model on random kinematic parameters outside the training set to ensure generalization.
+To generate the validation GIF shown above, run the inference script. It tests the model on random kinematic parameters to ensure generalization.
 
 ```bash
 python inference_surrogate.py
