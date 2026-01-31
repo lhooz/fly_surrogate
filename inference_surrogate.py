@@ -284,7 +284,7 @@ def run_validation():
     })
 
     fig, axes = plt.subplots(2, 2, figsize=(16, 10), dpi=100)
-    plt.subplots_adjust(wspace=0.15, hspace=0.25)
+    plt.subplots_adjust(left=0.05, right=0.98, bottom=0.05, top=0.95, wspace=0.15, hspace=0.25)
     cases = [case_1, case_2]
     
     plots = []

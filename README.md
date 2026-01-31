@@ -1,14 +1,14 @@
-# Bio-Fluid LBM Surrogate: Hybrid Physics-ML Aerodynamics
+# Bio-Fluid Surrogate: Hybrid Physics-ML Aerodynamics
 
 ![Inference Demo](images/inference.gif)
 *Side-by-side validation on unseen kinematic data. **Left:** Real-time fluid vorticity field (Background) with instantaneous force vectors (Green=Ground Truth, Pink=Prediction). **Right:** Time-history of Lift and Drag forces showing the surrogate model tracking the CFD solver with high fidelity.*
 
-**Bio-Fluid LBM Surrogate** is a high-fidelity simulation framework that bridges the gap between accurate fluid dynamics and fast neural inference. It utilizes **Taichi** to run a Lattice Boltzmann Method (LBM) fluid simulation and **JAX** to train a real-time neural surrogate model on the generated data.
+**Bio-Fluid Surrogate** is a high-fidelity simulation framework that bridges the gap between accurate fluid dynamics and fast neural inference. It utilizes **Taichi** to run a Lattice Boltzmann Method (LBM) fluid simulation and **JAX** to train a real-time neural surrogate model on the generated data.
 
 ### 🌟 Key Features
 
-* **Hybrid Compute Architecture:** Zero-copy synchronization between **GPU-LBM** (Taichi) and **Differentiable Learning** (JAX).
-* **Bio-Fluid Physics:** **D2Q9 LBM** solver with **Smagorinsky LES** for stable unsteady vortex dynamics at low-to-moderate Re ($Re \sim 100-1000$).
+* **Hybrid Compute Architecture:** Zero-copy synchronization between **LBM** (Taichi) and **Differentiable Learning** (JAX).
+* **Bio-Fluid Physics:** **D2Q9 LBM** solver with **Smagorinsky LES** for unsteady vortex dynamics at low-to-moderate Re.
 * **Robust FSI:** **Brinkman Penalization** immersed boundary method for mapping Lagrangian structures to Eulerian grids.
 * **Infinite Data Pipeline:** **Online learning** architecture generates physics data on-the-fly, eliminating static dataset constraints.
 * **Geometric Invariance:** Decouples global body jitter from local wing kinematics, enabling efficient learning of **position-independent** aerodynamics.
@@ -16,7 +16,7 @@
 
 ### 🎓 Try it now
 
-Run the full training demo in your browser with zero setup (requires T4 GPU runtime):
+Run the full training demo in your browser with zero setup (requires GPU runtime):
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/lhooz/fly_surrogate/blob/main/notebooks/train_surrogate.ipynb)
 
@@ -24,7 +24,7 @@ Run the full training demo in your browser with zero setup (requires T4 GPU runt
 
 ## 🧠 Neural Architecture
 
-The surrogate model uses a **1D ResNet** designed to capture spatial correlations along the wing chord. Unlike 2D image models, this architecture respects the topological sequence of the discretization points and processes kinematic history directly.
+The surrogate model uses a **1D ResNet** designed to capture spatial correlations along the wing chord. This architecture respects the topological sequence of the discretization points and processes kinematic history directly.
 
 ```mermaid
 graph LR

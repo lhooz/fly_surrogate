@@ -11,4 +11,7 @@ checkpoints/
 .DS_Store
 
 # Allow everything in the images folder
-!images/*
+!images/inference.gif
+
+# ALLOW the best model for the demo
+!checkpoints/checkpoint.pkl
