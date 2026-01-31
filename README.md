@@ -156,7 +156,7 @@ If you use this project in your research, please cite it using the following Bib
 
 ```bibtex
 @software{fly_surrogate2026,
-  author = {Hao, Li},
+  author = {Li, Hao},
   title = {Bio-Fluid Surrogate: Hybrid Physics-ML Aerodynamics},
   version = {0.1.0},
   year = {2026},
