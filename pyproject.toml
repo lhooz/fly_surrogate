@@ -5,11 +5,11 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "fly_surrogate"
 version = "0.1.0"
-description = "Bio-Fluid Surrogate: Hybrid Physics-ML Aerodynamics"
+description = "Hybrid Physics-ML Aerodynamics Framework"
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [
-  { name = "HaoLi", email = "haoli26@buaa.edu.cn" },
+  { name = "Hao Li", email = "haoli26@buaa.edu.cn" },
 ]
 
 # --- CRITICAL DEPENDENCIES FOR COLAB ---
@@ -22,12 +22,16 @@ dependencies = [
     "matplotlib"
 ]
 
+# --- PACKAGING CONFIGURATION ---
+[tool.setuptools]
+# Since your scripts (environment_engine.py, etc.) are in the root,
+# we tell setuptools to find packages here.
+packages = ["fly_surrogate"] 
+
 [tool.setuptools.packages.find]
 where = ["."]
-# This ensures it finds 'environment_engine_taichi.py' and raining script
-include = ["*"] 
+include = ["*"]  # Includes your top-level python scripts
 
-# 2. INCLUDE DATA FILES (Checkpoints, Visualizations)
 [tool.setuptools.package-data]
-# This ensures pickle files (checkpoints) are included
+# Ensures pickle files (checkpoints) and GIFs are included when installed
 "*" = ["*.pkl", "*.gif"]
