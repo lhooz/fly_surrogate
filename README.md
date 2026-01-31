@@ -162,6 +162,7 @@ If you use this project in your research, please cite it using the following Bib
   year = {2026},
   url = {https://github.com/lhooz/fly_surrogate}
 }
+```
 
 ## 📧 Contact
 
