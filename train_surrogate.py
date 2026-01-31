@@ -4,14 +4,14 @@ import os
 # COLAB GPU CONFIGURATION
 # ---------------------------------------------------------
 # 1. Stop JAX from pre-allocating 90% of VRAM at startup.
-os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
+# os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
 
 # 2. Alternatively, force JAX to take only a specific fraction (e.g., 40%)
 #    leaving the rest for Taichi.
-os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"] = ".40"
+# os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"] = ".40"
 
 # 3. Ensure JAX sees the GPU (Remove the "cpu" forcing)
-# os.environ["JAX_PLATFORMS"] = "cpu"  <-- DELETE OR COMMENT THIS OUT
+os.environ["JAX_PLATFORMS"] = "cpu"
 
 import jax
 import jax.numpy as jnp
@@ -42,9 +42,9 @@ print(f"JAX Devices: {jax.devices()}")
 
 # --- IMPORT TEACHER ---
 try:
-    from environment_engine_taichi import TaichiFluidEngine
+    from environment_engine import TaichiFluidEngine
 except ImportError:
-    print("Error: 'environment_engine_taichi.py' not found.")
+    print("Error: 'environment_engine.py' not found.")
     exit()
 
 # ==========================================
@@ -284,12 +284,12 @@ def visualize_trajectory(cycle, teacher, wing_gen, body_gen, wing_ctrl, body_ctr
             )
             teacher.step(g_pos, g_ang, g_lin, g_rot)
             
-            _, _, forces, _ = teacher.get_observation()
+            _, _, forces, _, _ = teacher.get_observation()
             current_force = np.sum(forces, axis=0)
             
             t += teacher.DT
 
-        pts, _, _, _ = teacher.get_observation()
+        pts, _, _, _, _ = teacher.get_observation()
         u_field = teacher.u.to_numpy()
         
         ux, uy = u_field[:, :, 0], u_field[:, :, 1]
@@ -455,7 +455,7 @@ def train_online():
     start_time = time.time()
     
     # --- MAIN LOOP ---
-    for cycle in range(start_cycle, 3001): 
+    for cycle in range(start_cycle, 6001): 
         
         # =====================================================================
         # 1. RANDOMIZE CONTROLS
@@ -503,7 +503,7 @@ def train_online():
         b_fz  = np.random.uniform(0.0, 40.0)
         b_phz = np.random.uniform(-3.14, 3.14)
         
-        b_Ap  = np.random.uniform(-0.8, 0.8)   # +/- ~45 deg pitch
+        b_Ap  = np.random.uniform(-1.0, 1.0)   # +/- ~57 deg pitch
         b_fp  = np.random.uniform(0.0, 40.0)
         b_php = np.random.uniform(-3.14, 3.14)
 
@@ -575,7 +575,7 @@ def train_online():
             
             # Helper to store velocity from previous *Model Step* (for Finite Difference)
             prev_model_vels = np.zeros_like(teacher.s_vel)
-            
+
             # B. WARMUP (Raw LBM Steps)
             for _ in range(warmup_steps_lbm):
                 r_val, r_rate = get_ramp_state(t)
@@ -588,7 +588,7 @@ def train_online():
                 t += DT_LBM
             
             # Capture state at end of warmup
-            _, prev_model_vels, _, _ = teacher.get_observation()
+            _, prev_model_vels, _, _, _ = teacher.get_observation()
 
             # C. DATA COLLECTION (Sub-sampled Loop)
             traj_x = np.zeros((collect_steps_model, INPUT_DIM), dtype=np.float32)
@@ -596,7 +596,9 @@ def train_online():
             
             # Pre-calc span offsets for reconstructing body-frame points
             span_offsets = np.linspace(teacher.WING_LEN/2.0, -teacher.WING_LEN/2.0, teacher.N_PTS)
-            
+
+            max_f_in_cycle = 0.0
+
             for k in range(collect_steps_model):
                 
                 # Inner Loop: Run LBM 'SUBSAMPLE_RATE' times
@@ -607,14 +609,36 @@ def train_online():
                     )
                     teacher.step(g_pos, g_ang, g_lin, g_rot)
                     t += DT_LBM
-                
+
                 # --- SNAPSHOT (Every 10 LBM steps) ---
                 # 1. Get Simulation Truth (Global Frame)
                 # pts_global: Absolute pos (includes body jitter) -> UNUSED for Training Input
                 # vels_global: Absolute flow velocity -> USED (Airspeed)
                 # forces: Aerodynamic forces -> TARGET
-                pts_global, vels_global, forces, _ = teacher.get_observation()
+                pts_global, vels_global, forces, _, step_max = teacher.get_observation()
+
+                if step_max > max_f_in_cycle:
+                    max_f_in_cycle = step_max
                 
+                # We need the current Body Angle (b_theta) from the kinematic generato
+                # Re-calculate body pitch for this instant t
+                b_pos_now, _ = body_gen.get_body_state(t, body_controls)
+                b_theta_now = b_pos_now[2] * r_val # Apply ramp scaling if necessary
+
+                # Rotation Matrix (Global to Body = Rotate by -theta)
+                c_b, s_b = np.cos(-b_theta_now), np.sin(-b_theta_now)
+                
+                # Apply rotation to every node's force vector
+                # forces shape is (N_PTS, 2) where col 0 is Fx, col 1 is Fz
+                fx_global = forces[:, 0]
+                fz_global = forces[:, 1]
+
+                fx_body = fx_global * c_b - fz_global * s_b
+                fz_body = fx_global * s_b + fz_global * c_b
+                
+                # Stack them back together
+                forces_body_frame = np.stack([fx_body, fz_body], axis=1)
+
                 # 2. Compute Body-Frame Position (The "Correct" Training Input)
                 r_val, r_rate = get_ramp_state(t)
                 
@@ -645,6 +669,25 @@ def train_online():
                 # 3. Compute Global Acceleration (Backward Finite Difference)
                 accels = (vels_global - prev_model_vels) / DT_MODEL
                 
+                # Transform Vel & Acc -> Body Frame
+                # We reuse c_b, s_b (cos(-theta), sin(-theta)) calculated earlier for forces
+                
+                # 1. Rotate Velocity
+                vx_glob = vels_global[:, 0]
+                vz_glob = vels_global[:, 1]
+                
+                vx_body = vx_glob * c_b - vz_glob * s_b
+                vz_body = vx_glob * s_b + vz_glob * c_b
+                vels_body_frame = np.stack([vx_body, vz_body], axis=1)
+
+                # 2. Rotate Acceleration
+                ax_glob = accels[:, 0]
+                az_glob = accels[:, 1]
+
+                ax_body = ax_glob * c_b - az_glob * s_b
+                az_body = ax_glob * s_b + az_glob * c_b
+                accels_body_frame = np.stack([ax_body, az_body], axis=1)
+
                 # Update prev velocity
                 prev_model_vels = vels_global.copy()
                 
@@ -654,9 +697,9 @@ def train_online():
                 
                 # 5. Pack Data
                 flat_pts = pts_body_frame.flatten() / NORM_POS
-                flat_vels = vels_global.flatten() / NORM_VEL
-                flat_accs = accels.flatten() / NORM_ACC 
-                flat_forces = forces.flatten() * NORM_FORCE
+                flat_vels = vels_body_frame.flatten() / NORM_VEL
+                flat_accs = accels_body_frame.flatten() / NORM_ACC
+                flat_forces = forces_body_frame.flatten() * NORM_FORCE
                 
                 traj_x[k] = np.concatenate([flat_pts, flat_vels, flat_accs])
                 traj_y[k] = flat_forces
@@ -696,20 +739,22 @@ def train_online():
         # 6. Logging & Saving
         if cycle % 1 == 0:
             elapsed = time.time() - start_time
+            saturation = (max_f_in_cycle / 0.05) * 100
             
             # Convert to readable units for logging
             str_mm = stroke_amp * 1000.0
             dev_mm = dev_amp * 1000.0
             body_deg = np.degrees(b_Ap) # Body pitch amplitude
-            
+
             # Create a concise log string
-            # Freq: Hz | Str: mm | Dev: mm | Body: deg | Buff: count | Loss: val | Time: s
+            # Freq: Hz | Str: mm | Dev: mm | Body: deg | MaxF: LB Units (%) | Buff: count | Loss: val | Time: s
             log_msg = (
                 f"Cycle {cycle:04d} | "
                 f"Freq: {freq:.1f}Hz | "
                 f"Str: {str_mm:.1f}mm | "
                 f"Dev: {dev_mm:.1f}mm | "
                 f"Body: {body_deg:.1f}° | "
+                f"MaxF_LB: {max_f_in_cycle:.3f} ({saturation:.1f}%) | "
                 f"Buff: {buffer_len} | "
                 f"Loss: {loss_val:.2e} | "
                 f"Time: {elapsed:.1f}s"

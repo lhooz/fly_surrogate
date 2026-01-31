@@ -5,7 +5,7 @@ import numpy as np
 # CRITICAL FOR COLAB: We reduced fraction from 0.7 to 0.4 
 # to leave room for JAX (which we also capped at 40%).
 try:
-    ti.init(arch=ti.gpu, device_memory_fraction=0.4)
+    ti.init(arch=ti.gpu, device_memory_fraction=0.8)
 except:
     print("Warning: Taichi GPU init failed. Falling back to CPU.")
     ti.init(arch=ti.cpu)
@@ -45,6 +45,7 @@ class TaichiFluidEngine:
         self.THICKNESS = 0.0015
         
         # Physics Coefficients
+        """
         self.K_STRETCH = 100000.0
         self.K_BEND_MAX = 10.0
         self.K_BEND_MIN = 10.0
@@ -56,11 +57,24 @@ class TaichiFluidEngine:
         self.MASS_MIN = 0.00001
         self.DAMPING = 0.001
         self.SUBSTEPS = 30
+        """
+        self.K_STRETCH = 100000.0
+        self.K_BEND_MAX = 10.0
+        self.K_BEND_MIN = 0.1
+        self.K_COUPLE_MAX = 10.0
+        self.K_COUPLE_MIN = 0.1
+        self.B_COUPLE_MAX = 1.0  
+        self.B_COUPLE_MIN = 0.01
+        self.MASS_MAX = 0.00001
+        self.MASS_MIN = 0.000001
+        self.DAMPING = 0.001
+        self.SUBSTEPS = 30
         
         self.FORCE_SCALE = 5.0 
         self.MAX_NODE_FORCE = 0.2
-        self.MAX_LATTICE_FORCE = 0.05
         self.ALPHA_PENALTY = 0.1
+        self.MAX_LATTICE_FORCE = 0.05
+        self.max_f_observed = ti.field(dtype=ti.f32, shape=())
 
         # ==========================================
         #        4. ALLOCATE MEMORY
@@ -171,6 +185,8 @@ class TaichiFluidEngine:
         # [Image of Immersed Boundary Method grid interaction]
         # This kernel maps Lagrangian structure points to the Eulerian fluid grid.
         
+        self.max_f_observed[None] = 0.0  # Reset
+
         for i in range(self.N_PTS):
             self.s_force_aero_field[i] = [0.0, 0.0]
             
@@ -200,6 +216,10 @@ class TaichiFluidEngine:
                         
                         # Brinkman Penalization
                         f_lb = -self.ALPHA_PENALTY * rho_local * (u_fluid - u_solid_lb)
+                        # Track the absolute maximum for monitoring
+                        ti.atomic_max(self.max_f_observed[None], ti.abs(f_lb[0]))
+                        ti.atomic_max(self.max_f_observed[None], ti.abs(f_lb[1]))
+
                         f_lb[0] = ti.max(ti.min(f_lb[0], self.MAX_LATTICE_FORCE), -self.MAX_LATTICE_FORCE)
                         f_lb[1] = ti.max(ti.min(f_lb[1], self.MAX_LATTICE_FORCE), -self.MAX_LATTICE_FORCE)
                         
@@ -223,6 +243,8 @@ class TaichiFluidEngine:
     # ==========================================
     #           PYTHON METHODS (CPU)
     # ==========================================
+    def get_max_lattice_force(self):
+        return self.max_f_observed[None]
 
     def reset(self, start_bx, start_bz, start_angle):
         self.reset_fluid_gpu()
@@ -307,5 +329,6 @@ class TaichiFluidEngine:
             self.s_pos.copy(),
             self.s_vel.copy(),
             self.s_force_aero_field.to_numpy(),
-            self.s_force_coupling.copy()
+            self.s_force_coupling.copy(),
+            self.max_f_observed[None]
         )
