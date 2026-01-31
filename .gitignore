@@ -9,3 +9,6 @@ checkpoints/
 
 # System files
 .DS_Store
+
+# Allow everything in the images folder
+!images/*

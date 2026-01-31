@@ -7,12 +7,12 @@
 
 ### 🌟 Key Features
 
-* **Hybrid Compute Architecture:** Seamless integration of **GPU-accelerated LBM** (via Taichi) for physics and **JAX** for differentiable learning, managing memory contention on a single device.
-* **Bio-Relevant Aerodynamics:** Implements a **D2Q9 Lattice Boltzmann** solver with LES stability, capturing complex **unsteady vortex shedding** at low-to-moderate Reynolds numbers ($Re \sim 100-1000$).
-* **Robust Fluid-Structure Interaction (FSI):** Features a robust **Brinkman Penalization** immersed boundary method to map Lagrangian structure points to the Eulerian fluid grid without complex remeshing.
-* **Infinite Data Pipeline (Online Learning):** Generates physics data on-the-fly during training, eliminating static dataset storage and allowing the model to learn from a continuously varying state space.
-* **Geometric Invariance:** Decouples global body jitter from local wing kinematics (Global-Local Decomposition), allowing the neural network to learn efficient, generalized aerodynamic laws independent of position.
-* **Compliant "Ghost" Coupling:** Models structural flexibility and actuator lag via a spring-damper coupling between the control target and the physical wing, preventing numerical instability during aggressive maneuvers.
+* **Hybrid Compute Architecture:** Zero-copy synchronization between **GPU-LBM** (Taichi) and **Differentiable Learning** (JAX).
+* **Bio-Fluid Physics:** **D2Q9 LBM** solver with **Smagorinsky LES** for stable unsteady vortex dynamics at low-to-moderate Re ($Re \sim 100-1000$).
+* **Robust FSI:** **Brinkman Penalization** immersed boundary method for mapping Lagrangian structures to Eulerian grids.
+* **Infinite Data Pipeline:** **Online learning** architecture generates physics data on-the-fly, eliminating static dataset constraints.
+* **Geometric Invariance:** Decouples global body jitter from local wing kinematics, enabling efficient learning of **position-independent** aerodynamics.
+* **Ghost Coupling:** Stabilizes training via a compliant spring-damper link between the control target and physical wing, modeling **system compliance**.
 
 ### 🎓 Try it now
 
@@ -29,22 +29,22 @@ The surrogate model uses a **1D ResNet** designed to capture spatial correlation
 ```mermaid
 graph LR
     subgraph "Inputs (N_pts x 6)"
-    A[Position<br/>(x, y)]
-    B[Velocity<br/>(u, v)]
-    C[Acceleration<br/>(ax, ay)]
+    A["Position<br/>(x, y)"]
+    B["Velocity<br/>(u, v)"]
+    C["Acceleration<br/>(ax, ay)"]
     end
 
     subgraph "FluidSurrogateResNet (JAX)"
     D[Concatenate]
-    E[Conv1D<br/>Feature Projection]
-    F[ResNet Block 1<br/>(GELU + Skip)]
-    G[ResNet Block 2<br/>(GELU + Skip)]
-    H[ResNet Block 3<br/>(GELU + Skip)]
-    I[Conv1D<br/>Readout Head]
+    E["Conv1D<br/>Feature Projection"]
+    F["ResNet Block 1<br/>(GELU + Skip)"]
+    G["ResNet Block 2<br/>(GELU + Skip)"]
+    H["ResNet Block 3<br/>(GELU + Skip)"]
+    I["Conv1D<br/>Readout Head"]
     end
 
     subgraph "Outputs (N_pts x 2)"
-    J[Aerodynamic Forces<br/>(Lift, Drag)]
+    J["Aerodynamic Forces<br/>(Lift, Drag)"]
     end
 
     A & B & C --> D
@@ -133,6 +133,7 @@ Key simulation parameters are defined in `environment_engine.py`:
 
 * **Grid Resolution:** 500 x 500 (LBM Lattice)
 * **Physics:** D2Q9 LBM with Smagorinsky Sub-grid Model ()
+* **Structure:** Mass-Spring-Damper Wing ( points) with 30 CPU substeps per fluid step.
 * **Time Step:**  s (Fluid Solver) vs  s (Surrogate Model)
 
 ## 📦 Dependencies
@@ -145,4 +146,4 @@ Key simulation parameters are defined in `environment_engine.py`:
 
 ## 📄 License
 
-This project is open-source. See the LICENSE file for details.
+This project is open-source. See the [LICENSE](https://www.google.com/search?q=LICENSE) file for details.
