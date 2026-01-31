@@ -110,15 +110,14 @@ class WingKinematics:
         phi_flap = 2.0 * jnp.pi * freq * t
         phi_dev  = 2.0 * jnp.pi * f_dev * t + dev_phase
         
-        # A. Stroke (Sinusoidal)
+        # A. Stroke 
         stroke_val = stroke_amp * jnp.sin(phi_flap)
         
-        # B. Deviation (Figure-8)
+        # B. Deviation
         dev_val = -dev_amp * jnp.sin(phi_dev)
         
         # C. Pitch (Tanh Switching)
         stroke_vel_sign = jnp.cos(phi_flap + pitch_phase)
-        # Sharpness = 3.0 provides smooth but fast switching
         switch = 0.5 * (1.0 + jnp.tanh(3.0 * stroke_vel_sign))
         current_mid_aoa = aoa_up + (aoa_down - aoa_up) * switch
         pitch_val = -current_mid_aoa * jnp.cos(phi_flap + pitch_phase)
@@ -142,9 +141,6 @@ class WingKinematics:
         p_osc = np.array(primals) # [str, dev, pitch]
         v_osc = np.array(tangents)
 
-        # 2. Apply Ramp (Product Rule: d(uv) = u'v + uv')
-        # Pos = P * R
-        # Vel = V*R + P*R'
         p_final = p_osc * ramp_val
         v_final = v_osc * ramp_val + p_osc * ramp_rate
         
@@ -177,28 +173,21 @@ def compute_global_kinematics(t, wing_gen, body_gen, wing_ctrl, body_ctrl, ramp_
     v_str, v_dev, v_pitch = w_vel
     
     # 3. Rigid Body Transformation
-    # We rotate the Stroke Plane by the Body Pitch
     c, s = np.cos(b_theta), np.sin(b_theta)
     
     # Global Position (Hinge + Rotated Stroke Translation)
-    # 
-    # P_global = P_body + R_body * P_local
     g_x = bx + (l_str * c - l_dev * s)
     g_z = bz + (l_str * s + l_dev * c)
     
     # Global Angle (Add Body Pitch + Wing Pitch)
-    # + Pi/2 to align with vertical (standard LBM convention)
     g_ang = b_theta + l_pitch + (np.pi / 2.0)
     
     # Global Velocity
-    # V_global = V_body + (Omega x R*P_local) + (R * V_local)
-    
     # Term 1: Rotated Local Velocity (R * V_local)
     rv_x = v_str * c - v_dev * s
     rv_z = v_str * s + v_dev * c
     
     # Term 2: Tangential Velocity (Omega x Radius)
-    # Radius vector (in global frame) = (g_x - bx, g_z - bz)
     rx, rz = (g_x - bx), (g_z - bz)
     tan_x = -b_omega * rz
     tan_z =  b_omega * rx
@@ -210,7 +199,6 @@ def compute_global_kinematics(t, wing_gen, body_gen, wing_ctrl, body_ctrl, ramp_
     g_omega = b_omega + v_pitch
     
     # 4. Return format for teacher.step()
-    # teacher.step(pos=(x,y), ang=val, vel_lin=(vx,vy), vel_ang=val)
     return (g_x, g_z), g_ang, (g_vx, g_vz), g_omega
 
 # ==========================================
@@ -236,7 +224,6 @@ def visualize_trajectory(cycle, teacher, wing_gen, body_gen, wing_ctrl, body_ctr
     real_line, = ax.plot([], [], 'k-', linewidth=1.5, alpha=0.6, label='Centerline')
     q_force = ax.quiver([0], [0], [0], [0], color='black', scale=1.0, scale_units='xy')
     
-    # Info Text
     info_text = ax.text(0.02, 0.95, "", transform=ax.transAxes, 
                         fontsize=10, verticalalignment='top', 
                         bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
@@ -245,7 +232,7 @@ def visualize_trajectory(cycle, teacher, wing_gen, body_gen, wing_ctrl, body_ctr
     ax.set_xlim(-half, half)
     ax.set_ylim(-half, half)
     
-    # --- SIMULATION RESET (Updated for Global Kinematics) ---
+    # --- SIMULATION RESET ---
     g_pos, g_ang, _, _ = compute_global_kinematics(
         0.0, wing_gen, body_gen, wing_ctrl, body_ctrl, 0.0, 0.0
     )
@@ -278,7 +265,7 @@ def visualize_trajectory(cycle, teacher, wing_gen, body_gen, wing_ctrl, body_ctr
         for _ in range(render_skip):
             r_val, r_rate = get_ramp_state(t)
             
-            # [FIX] Use compute_global_kinematics
+            # Use compute_global_kinematics
             g_pos, g_ang, g_lin, g_rot = compute_global_kinematics(
                 t, wing_gen, body_gen, wing_ctrl, body_ctrl, r_val, r_rate
             )
@@ -298,7 +285,7 @@ def visualize_trajectory(cycle, teacher, wing_gen, body_gen, wing_ctrl, body_ctr
         
         real_line.set_data(pts[:, 0], pts[:, 1])
         
-        # [FIX] Ghost Line Drawing
+        # Ghost Line Drawing
         r_val, r_rate = get_ramp_state(t)
         g_pos, g_ang, _, _ = compute_global_kinematics(
             t, wing_gen, body_gen, wing_ctrl, body_ctrl, r_val, r_rate
@@ -390,7 +377,7 @@ def train_online():
     # Constants
     NORM_POS = teacher.PHYS_SIZE 
     NORM_VEL = 10.0
-    NORM_ACC = 1000.0 # High value due to 1/dt division
+    NORM_ACC = 1000.0
     NORM_FORCE = 100.0
     N_PTS = teacher.N_PTS
     
@@ -427,7 +414,7 @@ def train_online():
         opt_state = optimizer.init(params)
         start_cycle = 0
 
-    # Ring Buffer
+    # Buffer
     BUFFER_SIZE = 200_000
     buffer_x = np.zeros((BUFFER_SIZE, INPUT_DIM), dtype=np.float32)
     buffer_y = np.zeros((BUFFER_SIZE, OUTPUT_DIM), dtype=np.float32)
@@ -461,7 +448,7 @@ def train_online():
         # 1. RANDOMIZE CONTROLS
         # =====================================================================
         
-        # --- A. WING KINEMATICS (Original Distro) ---
+        # --- A. WING KINEMATICS ---
         raw_freq_in    = np.random.uniform(-1.0, 1.0)
         raw_str_in     = np.random.uniform(-2.0, 2.0)
         raw_aoa_d_in   = np.random.uniform(-1.3, 1.2)
@@ -479,13 +466,12 @@ def train_online():
         pitch_phase = np.clip(raw_pitch_ph * 0.8, -0.8, 0.8)
         dev_amp = np.clip(raw_dev_amp_in * 0.008, -0.008, 0.008)
         
-        # Deviation Frequency (Original Logic)
+        # Deviation Frequency
         f_dev_ratio = np.clip(2.0 + raw_f_dev_in * 0.3, 1.7, 2.3)
         f_dev = freq * f_dev_ratio
         dev_phase = np.clip(raw_dev_ph_in * 1.57, -1.57, 1.57)
 
         # Pack Wing Controls
-        # CRITICAL: Must match the order in WingKinematics._compute_raw_wing_state
         # Signature: (t, freq, stroke_amp, pitch_phase, dev_amp, f_dev, dev_phase, aoa_down, aoa_up)
         wing_controls = np.array([
             freq, stroke_amp, pitch_phase, 
@@ -547,7 +533,6 @@ def train_online():
         
         # 3. Visualization Check
         if cycle % 100 == 0:
-            # UPDATED CALL: Pass body_gen, wing_controls, and body_controls
             visualize_trajectory(
                 cycle, 
                 teacher, 
@@ -620,7 +605,6 @@ def train_online():
                 if step_max > max_f_in_cycle:
                     max_f_in_cycle = step_max
                 
-                # We need the current Body Angle (b_theta) from the kinematic generato
                 # Re-calculate body pitch for this instant t
                 b_pos_now, _ = body_gen.get_body_state(t, body_controls)
                 b_theta_now = b_pos_now[2] * r_val # Apply ramp scaling if necessary
@@ -629,7 +613,6 @@ def train_online():
                 c_b, s_b = np.cos(-b_theta_now), np.sin(-b_theta_now)
                 
                 # Apply rotation to every node's force vector
-                # forces shape is (N_PTS, 2) where col 0 is Fx, col 1 is Fz
                 fx_global = forces[:, 0]
                 fz_global = forces[:, 1]
 
@@ -642,7 +625,7 @@ def train_online():
                 # 2. Compute Body-Frame Position (The "Correct" Training Input)
                 r_val, r_rate = get_ramp_state(t)
                 
-                # [FIX START] Correct Unpacking & Orientation -----------------
+                # ---- Unpacking & Orientation -----
                 # get_local_pose returns: (p_final, v_final) where p_final is [stroke, dev, pitch]
                 w_pos, _ = kinematics_gen.get_local_pose_and_velocity(
                     t, wing_controls, r_val, r_rate
@@ -652,7 +635,6 @@ def train_online():
                 l_str, l_dev, l_pitch_raw = w_pos
                 
                 # Apply the Pi/2 offset to match the LBM Engine's global convention
-                # (Without this, the reconstructed wing shape is rotated 90 deg relative to reality)
                 l_pitch_body_frame = l_pitch_raw + (np.pi / 2.0)
                 
                 # Reconstruct points: Wing is a rigid line rotated by pitch + translated by str/dev
@@ -664,14 +646,11 @@ def train_online():
                 ys_body = l_dev + span_offsets * s_w
                 
                 pts_body_frame = np.stack([xs_body, ys_body], axis=1)
-                # [FIX END] ---------------------------------------------------
                 
                 # 3. Compute Global Acceleration (Backward Finite Difference)
                 accels = (vels_global - prev_model_vels) / DT_MODEL
                 
                 # Transform Vel & Acc -> Body Frame
-                # We reuse c_b, s_b (cos(-theta), sin(-theta)) calculated earlier for forces
-                
                 # 1. Rotate Velocity
                 vx_glob = vels_global[:, 0]
                 vz_glob = vels_global[:, 1]

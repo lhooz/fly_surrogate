@@ -2,7 +2,7 @@ import taichi as ti
 import numpy as np
 
 # Initialize Taichi
-# CRITICAL FOR COLAB: We reduced fraction from 0.7 to 0.4 
+# CRITICAL FOR COLAB: Reduced fraction from 0.7 to 0.4 
 # to leave room for JAX (which we also capped at 40%).
 try:
     ti.init(arch=ti.gpu, device_memory_fraction=0.8)
@@ -182,7 +182,7 @@ class TaichiFluidEngine:
 
     @ti.kernel
     def compute_fsi_and_apply_force(self):
-        # [Image of Immersed Boundary Method grid interaction]
+        # Image of Immersed Boundary Method grid interaction
         # This kernel maps Lagrangian structure points to the Eulerian fluid grid.
         
         self.max_f_observed[None] = 0.0  # Reset
@@ -198,7 +198,7 @@ class TaichiFluidEngine:
             iy = (p.y + self.PHYS_SIZE/2.0) / self.DX_SI
             base_x, base_y = int(ix), int(iy)
             
-            for ox in range(-3, 4): # Reduced stencil from 6 to 3 for speed (usually sufficient)
+            for ox in range(-3, 4):
                 for oy in range(-3, 4):
                     grid_x = (base_x + ox + self.NX) % self.NX
                     grid_y = (base_y + oy + self.NY) % self.NY

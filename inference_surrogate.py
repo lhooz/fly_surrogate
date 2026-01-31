@@ -201,7 +201,6 @@ def run_validation():
             pos, ang, vl, va = kinematics.get_pose_and_velocity(t, controls, r_val, r_rate)
             engine.step(pos, ang, vl, va)
             t += DT_LBM
-            # [FIX] No print here
 
         _, prev_model_vels, _, _, _ = engine.get_observation()
 
@@ -218,7 +217,7 @@ def run_validation():
                 engine.step(pos, ang, vl, va)
                 t += DT_LBM
             
-            # [FIX] Progress Bar Here
+            # Progress Bar
             if step % 50 == 0:
                 print(f"\r    Progress: {step}/{collect_model}", end="", flush=True)
 
@@ -297,7 +296,7 @@ def run_validation():
         ax_l = axes[i, 0]
         ext = [-engine.PHYS_SIZE/2, engine.PHYS_SIZE/2, -engine.PHYS_SIZE/2, engine.PHYS_SIZE/2]
         
-        # [TWEAK] Vorticity Range (Tighter range = Brighter Vortices)
+        # Vorticity Range (Tighter range = Brighter Vortices)
         im = ax_l.imshow(cases[i]['curl'][0], cmap='RdBu', vmin=-0.005, vmax=0.005, 
                          origin='lower', extent=ext, alpha=0.9)
         
@@ -383,7 +382,6 @@ def run_validation():
             curr = slice(0, frame+1)
             t = p['time_arr'][curr]
             
-            # [KEY FIX: Used 'pr_sum' instead of 'pred_sum']
             p['ln_gt_y'].set_data(t, p['gt_sum'][curr, 1])
             p['ln_pr_y'].set_data(t, p['pr_sum'][curr, 1])
             p['ln_gt_x'].set_data(t, p['gt_sum'][curr, 0])
