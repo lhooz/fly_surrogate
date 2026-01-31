@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "fly_surrogate"
 version = "0.1.0"
-description = "LBM Surrogate Training with Taichi and JAX"
+description = "Bio-Fluid Surrogate: Hybrid Physics-ML Aerodynamics"
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [
@@ -14,7 +14,7 @@ authors = [
 
 # --- CRITICAL DEPENDENCIES FOR COLAB ---
 dependencies = [
-    "taichi>=1.7.0",    # Essential: The Fluid Solver (Not on Colab by default)
+    "taichi>=1.7.0",    # Essential: The Fluid Solver 
     "jax",              # Core ML Framework
     "dm-haiku",         # Neural Network Library
     "optax",            # Optimizer
@@ -22,13 +22,12 @@ dependencies = [
     "matplotlib"
 ]
 
-# 1. TELL SETUPTOOLS TO FIND YOUR SCRIPTS
 [tool.setuptools.packages.find]
 where = ["."]
-# This ensures it finds 'environment_engine_taichi.py' and your training script
+# This ensures it finds 'environment_engine_taichi.py' and raining script
 include = ["*"] 
 
 # 2. INCLUDE DATA FILES (Checkpoints, Visualizations)
 [tool.setuptools.package-data]
-# This ensures pickle files (checkpoints) are included if you package it
+# This ensures pickle files (checkpoints) are included
 "*" = ["*.pkl", "*.gif"]
