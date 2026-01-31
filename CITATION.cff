@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Li"
+  given-names: "Hao"
+  orcid: "https://orcid.org/0000-0002-8726-7976"
+title: "Bio-Fluid Surrogate: Hybrid Physics-ML Aerodynamics"
+version: 0.1.0
+date-released: 2026-1-31
+url: "https://github.com/lhooz/fly_surrogate"
+license: MIT

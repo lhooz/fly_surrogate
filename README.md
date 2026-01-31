@@ -67,6 +67,8 @@ fly_surrogate/                 <-- Repository Root
 ├── environment_engine.py      # Taichi LBM Solver (LES + FSI)
 ├── train_surrogate.py         # Online Teacher-Student Training Loop
 ├── inference_surrogate.py     # Validation Script (Generates .gif)
+├── notebooks/                 # Colab Notebooks
+│   └── train_surrogate.ipynb  # Colab Training Demo
 ├── pyproject.toml             # Dependencies
 ├── images/                    # Documentation Assets
 │   └── inference.gif          # Validation Animation
@@ -84,7 +86,7 @@ fly_surrogate/                 <-- Repository Root
 Clone the repository and install dependencies using the configuration in `pyproject.toml`:
 
 ```bash
-git clone [https://github.com/lhooz/fly_surrogate.git](https://github.com/lhooz/fly_surrogate.git)
+git clone https://github.com/lhooz/fly_surrogate.git
 cd fly_surrogate
 pip install -e .
 
@@ -132,9 +134,9 @@ python inference_surrogate.py
 Key simulation parameters are defined in `environment_engine.py`:
 
 * **Grid Resolution:** 500 x 500 (LBM Lattice)
-* **Physics:** D2Q9 LBM with Smagorinsky Sub-grid Model ()
-* **Structure:** Mass-Spring-Damper Wing ( points) with 30 CPU substeps per fluid step.
-* **Time Step:**  s (Fluid Solver) vs  s (Surrogate Model)
+* **Physics:** D2Q9 LBM with Smagorinsky Sub-grid Model.
+* **Structure:** Mass-Spring-Damper Wing (20 points) with 30 CPU substeps per fluid step.
+* **Time Step:** $3 \times 10^{-6}$ s (Fluid Solver) vs $3 \times 10^{-5}$ s (Surrogate Model)
 
 ## 📦 Dependencies
 
@@ -146,4 +148,17 @@ Key simulation parameters are defined in `environment_engine.py`:
 
 ## 📄 License
 
-This project is open-source. See the [LICENSE](https://www.google.com/search?q=LICENSE) file for details.
+This project is open-source. See the [LICENSE](LICENSE) file for details.
+
+## 🖊️ Citation
+
+If you use this project in your research, please cite it using the following BibTeX entry:
+
+```bibtex
+@software{fly_surrogate2026,
+  author = {Hao, Li},
+  title = {Bio-Fluid Surrogate: Hybrid Physics-ML Aerodynamics},
+  version = {0.1.0},
+  year = {2026},
+  url = {https://github.com/lhooz/fly_surrogate}
+}
