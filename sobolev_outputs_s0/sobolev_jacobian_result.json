@@ -1,0 +1,12 @@
+{
+  "n_snapshots": 11248,
+  "n_jac": 2815,
+  "n_heldout": 563,
+  "lambda_g": 0.1,
+  "eps": 0.0001,
+  "cycles": 30,
+  "jac_frob_error_mse": 10.429519653320312,
+  "jac_frob_error_sobolev": 1.1334514617919922,
+  "improvement_pct": 89.13227550771094,
+  "seed": 0
+}
